@@ -5,10 +5,11 @@ Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
 
-from app import app
-from flask import render_template, request, jsonify, send_file
 import os
-
+from app import app, db
+from app.models import Movie
+from app.forms import MovieForm
+from flask import render_template, request, jsonify, send_file
 
 ###
 # Routing for your application.
@@ -18,6 +19,27 @@ import os
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route('/api/v1/movies', methods=['POST'])
+def movies():
+    form = MovieForm()
+    if form.validate_on_submit():
+        photo = form.photo.data
+        filename = secure_filename(photo.filename)
+        movie = Movie(
+            form.title.data,
+            form.description.data,
+            form.filename.data,
+            created_at)
+        json = jsonify(
+            message=f"Movie Succesfull added",
+            title=f"{title}",
+            poster=f"{filename}",
+            description=f"{description}")
+    else:
+        json = jsonify(
+            errors=form_errors()
+        )
+    print(json)
 
 ###
 # The functions below should be applicable to all Flask apps.
@@ -44,7 +66,6 @@ def send_text_file(file_name):
     file_dot_text = file_name + '.txt'
     return app.send_static_file(file_dot_text)
 
-
 @app.after_request
 def add_header(response):
     """
@@ -55,7 +76,6 @@ def add_header(response):
     response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
     response.headers['Cache-Control'] = 'public, max-age=0'
     return response
-
 
 @app.errorhandler(404)
 def page_not_found(error):
