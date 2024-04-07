@@ -12,7 +12,7 @@ from app.models import Movie
 from app.forms import MovieForm
 from flask_wtf.csrf import generate_csrf
 from werkzeug.utils import secure_filename
-from flask import render_template, request, jsonify, send_file, session
+from flask import render_template, request, jsonify, send_file, session, send_from_directory
 
 ###
 # Routing for your application.
@@ -26,10 +26,9 @@ def index():
 def get_csrf():
     return jsonify({'csrf_token': generate_csrf()})
 
-@app.route('/api/v1/movies', methods=['POST'])
+@app.route('/api/v1/movies', methods=['GET', 'POST'])
 def movies():
     form = MovieForm()
-    print(form.description.data)
     if form.validate_on_submit() and request.method == "POST":
         photo = form.poster.data
         title = form.title.data
@@ -57,11 +56,20 @@ def movies():
             "poster": filename, 
             "description": description
             })
+    elif request.method == "GET":
+        movies = db.session.execute(db.select(Movie)).scalars()
+        movies = [{'id': movie.id, 'title': movie.title, 'description': movie.description, 'poster': "/api/v1/posters/"+movie.poster} for movie in movies]
+        return jsonify({'movies': movies})
     else:
         return jsonify({ 
             "errors": 
                 form_errors(form)
             })
+
+@app.route('/api/v1/posters/<filename>')
+def get_image(filename):
+    print(filename)
+    return send_from_directory(os.path.join(os.getcwd(),app.config['UPLOAD_FOLDER']),filename)
 
 ###
 # The functions below should be applicable to all Flask apps.

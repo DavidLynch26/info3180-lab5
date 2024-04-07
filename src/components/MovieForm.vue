@@ -1,10 +1,11 @@
 <template>
-<!-- <div v-if=""></div> -->
-    <div v-if="msg['errors']" class="alert alert-danger" role="alert">
-        <li v-for="err in msg['errors']"> {{ err }} </li>
-    </div>
-    <div v-else class="alert alert-success" role="alert">
-        <p>{{ msg['message'] }}</p>
+    <div v-if="msg != null">
+        <div v-if="msg['errors']" class="alert alert-danger" role="alert">
+            <li v-for="err in msg['errors']"> {{ err }} </li>
+        </div>
+        <div v-else class="alert alert-success" role="alert">
+            <p>{{ msg['message'] }}</p>
+        </div>
     </div>
     <form @submit.prevent="saveMovie" id="movieForm">
         <div class="form-group mb-3">
@@ -19,20 +20,19 @@
             <label for="poster" class="form-label">Poster</label>
             <input type="file" id="poster" name="poster" class="form-control">
         </div>
-        <button type="submit">Submit</button>
+        <button class="btn btn-primary" type="submit">Submit</button>
     </form>
 </template>
 
 <script setup>
     import { ref, onMounted } from "vue";
 
-    const msg = ref(null);
-    let csrf_token = ref("");
-
     onMounted(() =>{
         getCsrfToken();
     });
-
+    
+    const msg = ref(null);
+    let csrf_token = ref("");
 
     function getCsrfToken() {
         fetch('/api/v1/csrf-token')
