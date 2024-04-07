@@ -6,10 +6,13 @@ This file creates your application.
 """
 
 import os
+import datetime
 from app import app, db
 from app.models import Movie
 from app.forms import MovieForm
-from flask import render_template, request, jsonify, send_file
+from flask_wtf.csrf import generate_csrf
+from werkzeug.utils import secure_filename
+from flask import render_template, request, jsonify, send_file, session
 
 ###
 # Routing for your application.
@@ -19,27 +22,46 @@ from flask import render_template, request, jsonify, send_file
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
+
 @app.route('/api/v1/movies', methods=['POST'])
 def movies():
     form = MovieForm()
-    if form.validate_on_submit():
-        photo = form.photo.data
+    print(form.description.data)
+    if form.validate_on_submit() and request.method == "POST":
+        photo = form.poster.data
+        title = form.title.data
+        created_at = datetime.datetime.now()
+        description = form.description.data
         filename = secure_filename(photo.filename)
+
+        photo.save(
+            os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            filename))
+
         movie = Movie(
-            form.title.data,
-            form.description.data,
-            form.filename.data,
+            title,
+            description,
+            filename,
             created_at)
-        json = jsonify(
-            message=f"Movie Succesfull added",
-            title=f"{title}",
-            poster=f"{filename}",
-            description=f"{description}")
+
+        db.session.add(movie)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Movie Successfully added",
+            "title": title,
+            "poster": filename, 
+            "description": description
+            })
     else:
-        json = jsonify(
-            errors=form_errors()
-        )
-    print(json)
+        return jsonify({ 
+            "errors": 
+                form_errors(form)
+            })
 
 ###
 # The functions below should be applicable to all Flask apps.
